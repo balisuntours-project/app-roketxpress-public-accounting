@@ -2,6 +2,8 @@ var $confirmDialog = $('#modal-confirm-action');
 if (generalJournalFunc == null) {
     var generalJournalFunc = function () {
         $(document).ready(function () {
+            setOptionHelper('optionCompany', 'dataCompany');
+            setOptionHelper('generalJournalEditor-optionCompany', 'dataCompany');
             setOptionHelper('optionAccountGeneral', 'dataAccountGeneral');
             setOptionHelper('optionAccountMain', 'dataAccountMain');
             setOptionHelper('optionAccountSub', 'dataAccountSub');
@@ -36,8 +38,8 @@ if (generalJournalFunc == null) {
     }
 }
 
-$('#optionAccountSub, #datePeriodStart, #datePeriodEnd').off('change');
-$('#optionAccountSub, #datePeriodStart, #datePeriodEnd').on('change', function (e) {
+$('#optionCompany, #optionAccountSub, #datePeriodStart, #datePeriodEnd').off('change');
+$('#optionCompany, #optionAccountSub, #datePeriodStart, #datePeriodEnd').on('change', function (e) {
     getDataGeneralJournal();
 });
 
@@ -53,17 +55,19 @@ function generateDataTable(page) {
 }
 
 function getDataGeneralJournal(page = 1) {
-    var $tableBody = $('#table-dataGeneralJournal > tbody'),
-        columnNumber = $('#table-dataGeneralJournal > thead > tr > th').length,
-        idAccountGeneral = $('#optionAccountGeneral').val(),
-        idAccountMain = $('#optionAccountMain').val(),
-        idAccountSub = $('#optionAccountSub').val(),
-        datePeriodStart = $('#datePeriodStart').val(),
-        datePeriodEnd = $('#datePeriodEnd').val(),
-        searchReffNumber = $('#searchReffNumber').val(),
-        searchDescription = $('#searchDescription').val(),
-        dataSend = {
+    var $tableBody          = $('#table-dataGeneralJournal > tbody'),
+        columnNumber        = $('#table-dataGeneralJournal > thead > tr > th').length,
+        idCompany           = $('#optionCompany').val(),
+        idAccountGeneral    = $('#optionAccountGeneral').val(),
+        idAccountMain       = $('#optionAccountMain').val(),
+        idAccountSub        = $('#optionAccountSub').val(),
+        datePeriodStart     = $('#datePeriodStart').val(),
+        datePeriodEnd       = $('#datePeriodEnd').val(),
+        searchReffNumber    = $('#searchReffNumber').val(),
+        searchDescription   = $('#searchDescription').val(),
+        dataSend            = {
             page: page,
+            idCompany: idCompany,
             idAccountGeneral: idAccountGeneral,
             idAccountMain: idAccountMain,
             idAccountSub: idAccountSub,
@@ -120,6 +124,7 @@ function getDataGeneralJournal(page = 1) {
                             });
 
                             rows += "<tr>" +
+                                "<td rowspan='" + rowSpan + "'>" + array.COMPANYNAME + "</td>" +
                                 "<td rowspan='" + rowSpan + "'>" + array.REFFNUMBER + "</td>" +
                                 "<td class='text-center' rowspan='" + rowSpan + "'>" + array.DATETRANSACTION + "</td>" +
                                 "<td rowspan='" + rowSpan + "'>" + array.DESCRIPTION + "</td>" +
@@ -192,12 +197,12 @@ function openGeneralJournalEditor(idJournalRecap = false) {
                             arrIdJournalDetails = [],
                             rowAccount = '';
 
+                        $("#generalJournalEditor-optionCompany").val(detailRecap.IDCOMPANY);
                         $("#generalJournalEditor-reffNumber").val(detailRecap.REFFNUMBER);
                         $("#generalJournalEditor-dateTransaction").val(detailRecap.DATETRANSACTION);
                         $("#generalJournalEditor-nominalTransaction").val(numberFormat(detailRecap.TOTALNOMINAL));
                         $("#generalJournalEditor-descriptionTransaction").val(detailRecap.DESCRIPTION);
                         $("#generalJournalEditor-idJournalRecap").val(idJournalRecap);
-                        console.log(listDetailJournal);
 
                         $.each(listDetailJournal, function (index, array) {
                             rowAccount += generateRowAccount(array.IDACCOUNT, array.IDJOURNALDETAILS, array.ACCOUNTCODE, array.ACCOUNTNAME, array.DESCRIPTION, array.DEBIT, array.CREDIT);
@@ -969,27 +974,27 @@ $('#modal-addAccountJournal').on('shown.bs.modal', function (e) {
 $("#form-addAccountJournal").off('submit');
 $("#form-addAccountJournal").on("submit", function (e) {
     e.preventDefault();
-    var idAccountMain = $('#addAccountJournal-optionAccountMain').val(),
-        idAccountSub = $('#addAccountJournal-optionAccountSub').val(),
-        idAccount = idAccountSub == '0' ? idAccountMain : idAccountSub,
-        textAccountMain = $('#addAccountJournal-optionAccountMain option:selected').text(),
-        arrTextAccountMain = textAccountMain.split(' '),
-        codeAccountMain = arrTextAccountMain[0],
-        nameAccountMain = arrTextAccountMain.splice(0, 1),
-        nameAccountMain = arrTextAccountMain.join(' '),
-        textAccountSub = $('#addAccountJournal-optionAccountSub option:selected').text(),
-        arrTextAccountSub = textAccountSub.split(' '),
-        codeAccountSub = arrTextAccountSub[0],
-        nameAccountSub = arrTextAccountSub.splice(0, 1),
-        nameAccountSub = arrTextAccountSub.join(' '),
-        codeAccount = idAccountSub == '0' ? codeAccountMain : codeAccountSub,
-        nameAccount = idAccountSub == '0' ? nameAccountMain : nameAccountSub,
-        debitCredit = $("input[name='addAccountJournal-debitCredit']:checked").val(),
-        description = $('#addAccountJournal-description').val(),
-        nominalTransaction = $('#addAccountJournal-nominalTransaction').val(),
+    var idAccountMain       = $('#addAccountJournal-optionAccountMain').val(),
+        idAccountSub        = $('#addAccountJournal-optionAccountSub').val(),
+        idAccount           = idAccountSub == '0' ? idAccountMain : idAccountSub,
+        textAccountMain     = $('#addAccountJournal-optionAccountMain option:selected').text(),
+        arrTextAccountMain  = textAccountMain.split(' '),
+        codeAccountMain     = arrTextAccountMain[0],
+        nameAccountMain     = arrTextAccountMain.splice(0, 1),
+        nameAccountMain     = arrTextAccountMain.join(' '),
+        textAccountSub      = $('#addAccountJournal-optionAccountSub option:selected').text(),
+        arrTextAccountSub   = textAccountSub.split(' '),
+        codeAccountSub      = arrTextAccountSub[0],
+        nameAccountSub      = arrTextAccountSub.splice(0, 1),
+        nameAccountSub      = arrTextAccountSub.join(' '),
+        codeAccount         = idAccountSub == '0' ? codeAccountMain : codeAccountSub,
+        nameAccount         = idAccountSub == '0' ? nameAccountMain : nameAccountSub,
+        debitCredit         = $("input[name='addAccountJournal-debitCredit']:checked").val(),
+        description         = $('#addAccountJournal-description').val(),
+        nominalTransaction  = $('#addAccountJournal-nominalTransaction').val(),
         nominalTransactionInt = nominalTransaction.replace(/[^0-9\.]+/g, '') * 1,
-        debitNominal = debitCredit == 'DR' ? nominalTransaction : 0,
-        creditNominal = debitCredit == 'CR' ? nominalTransaction : 0;
+        debitNominal        = debitCredit == 'DR' ? nominalTransaction : 0,
+        creditNominal       = debitCredit == 'CR' ? nominalTransaction : 0;
 
     if (nominalTransactionInt <= 0) {
         showWarning('Please input valid nominal');
@@ -1043,16 +1048,17 @@ function calculateDebitCreditJournal(returnBalance = false) {
 $("#form-generalJournalEditor").off('submit');
 $("#form-generalJournalEditor").on("submit", function (e) {
     e.preventDefault();
-    var idJournalRecap = $('#generalJournalEditor-idJournalRecap').val(),
+    var idJournalRecap      = $('#generalJournalEditor-idJournalRecap').val(),
+        idCompany           = $('#generalJournalEditor-optionCompany').val(),
         arrIdJournalDetails = $('#generalJournalEditor-arrIdJournalDetails').val(),
         arrIdJournalDetails = arrIdJournalDetails != '' ? JSON.parse(arrIdJournalDetails) : [],
-        date = $('#generalJournalEditor-dateTransaction').val(),
-        nominal = $('#generalJournalEditor-nominalTransaction').val().replace(/[^0-9\.]+/g, '') * 1,
-        description = $('#generalJournalEditor-descriptionTransaction').val(),
-        defaultDescription = $('#generalJournalEditor-defaultDescription').val(),
-        isBalance = calculateDebitCreditJournal(true),
-        arrAccountDetail = [],
-        urlFunction = idJournalRecap != '' && idJournalRecap != 0 ? 'updateData' : 'insertData';
+        date                = $('#generalJournalEditor-dateTransaction').val(),
+        nominal             = $('#generalJournalEditor-nominalTransaction').val().replace(/[^0-9\.]+/g, '') * 1,
+        description         = $('#generalJournalEditor-descriptionTransaction').val(),
+        defaultDescription  = $('#generalJournalEditor-defaultDescription').val(),
+        isBalance           = calculateDebitCreditJournal(true),
+        arrAccountDetail    = [],
+        urlFunction         = idJournalRecap != '' && idJournalRecap != 0 ? 'updateData' : 'insertData';
 
     if (description == defaultDescription) {
         showWarning("Please change the journal description before adding data");
@@ -1080,6 +1086,7 @@ $("#form-generalJournalEditor").on("submit", function (e) {
     } else {
         var dataSend = {
             idJournalRecap: idJournalRecap,
+            idCompany: idCompany,
             arrIdJournalDetails: arrIdJournalDetails,
             date: date,
             nominal: nominal,

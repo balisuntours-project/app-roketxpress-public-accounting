@@ -2,6 +2,8 @@ var $confirmDialog = $('#modal-confirm-action');
 if (chartOfAccountFunc == null) {
     var chartOfAccountFunc = function () {
         $(document).ready(function () {
+            setOptionHelper('optionCompany', 'dataCompany');
+            setOptionHelper('openingBalance-optionCompany', 'dataCompany');
             setOptionHelper('optionAccountGeneral', 'dataAccountGeneral');
             setOptionHelper('optionAccountMain', 'dataAccountMain', false, false, $('#optionAccountGeneral').val());
 
@@ -25,8 +27,8 @@ if (chartOfAccountFunc == null) {
     }
 }
 
-$('#optionAccountMain').off('change');
-$('#optionAccountMain').on('change', function (e) {
+$('#optionCompany, #optionAccountMain').off('change');
+$('#optionCompany, #optionAccountMain').on('change', function (e) {
     getDataChartOfAccount();
 });
 
@@ -38,13 +40,18 @@ $("#searchKeyword").on('keypress', function (e) {
 });
 
 function getDataChartOfAccount() {
-    var $tableBodyChartOfAccount = $('#table-dataChartOfAccount > tbody'),
-        $tableBodyOpeningAccountBalance = $('#table-dataOpeningAccountBalance > tbody'),
-        columnNumber = $('#table-dataChartOfAccount > thead > tr > th').length + 2,
-        idAccountGeneral = $('#optionAccountGeneral').val(),
-        idAccountMain = $('#optionAccountMain').val(),
-        searchKeyword = $('#searchKeyword').val(),
-        dataSend = { idAccountGeneral: idAccountGeneral, idAccountMain: idAccountMain, searchKeyword: searchKeyword };
+    var $tableBodyChartOfAccount    = $('#table-dataChartOfAccount > tbody'),
+        columnNumber                = $('#table-dataChartOfAccount > thead > tr > th').length + 2,
+        idCompany                   = $('#optionCompany').val(),
+        idAccountGeneral            = $('#optionAccountGeneral').val(),
+        idAccountMain               = $('#optionAccountMain').val(),
+        searchKeyword               = $('#searchKeyword').val(),
+        dataSend                    = { 
+            idCompany: idCompany,
+            idAccountGeneral: idAccountGeneral,
+            idAccountMain: idAccountMain,
+            searchKeyword: searchKeyword 
+        };
     $.ajax({
         type: 'POST',
         url: baseURL + "chartOfAccount/getDataAccount",
@@ -61,7 +68,6 @@ function getDataChartOfAccount() {
         beforeSend: function () {
             NProgress.set(0.4);
             $tableBodyChartOfAccount.html("<tr><td colspan='" + columnNumber + "'><center><i class='fa fa-spinner fa-pulse'></i><br/>Loading data...</center></td></tr>");
-            $tableBodyOpeningAccountBalance.html("<tr><td colspan='7'><center><i class='fa fa-spinner fa-pulse'></i><br/>Loading data...</center></td></tr>");
         },
         complete: function (jqXHR, textStatus) {
             var responseJSON = jqXHR.responseJSON,
@@ -70,7 +76,6 @@ function getDataChartOfAccount() {
             switch (jqXHR.status) {
                 case 200:
                     var dataAccount = responseJSON.result,
-                        dataAccountOpeningBalance = responseJSON.dataAccountOpeningBalance,
                         codeNumberGeneral = codeNumberMain = codeNumberSub = textClass = additionalText = '';
                     $.each(dataAccount, function (index, array) {
                         switch (array.LEVEL) {
@@ -111,21 +116,19 @@ function getDataChartOfAccount() {
                             "<td class='searchTd px-1' width='20'>" + codeNumberMain + "</td>" +
                             "<td class='searchTd pl-1' width='40'>" + codeNumberSub + "</td>" +
                             "<td ><span class='searchTd " + textClass + "'>" + additionalText + array.ACCOUNTNAME + "</span></td>" +
+                            "<td >" + array.COMPANYNAME + "</td>" +
                             "<td >" + array.DEFAULTDRCR + "</td>" +
                             "<td class='text-center'>" + optionActions + "</td>" +
                             "</tr>";
                     });
-                    generateTableAccountOpeningBalance(dataAccount, dataAccountOpeningBalance);
                     break;
                 case 404:
                 default:
                     rows = "<tr><td colspan='" + columnNumber + "' align='center'><center>" + getMessageResponse(jqXHR) + "</center></td></tr>";
-                    $tableBodyOpeningAccountBalance.html("<tr><td colspan='7' align='center'><center>" + getMessageResponse(jqXHR) + "</center></td></tr>");
                     break;
             }
 
             $tableBodyChartOfAccount.html(rows);
-
             if (searchKeyword != '') {
                 $(":contains(" + searchKeyword + ")").each(function () {
                     if ($(this).hasClass('searchTd')) {
@@ -141,91 +144,9 @@ function getDataChartOfAccount() {
     });
 }
 
-function generateTableAccountOpeningBalance(dataAccount, dataAccountOpeningBalance) {
-    var detailJournalRecap = dataAccountOpeningBalance.detailJournalRecap,
-        dataOpeningBalance = dataAccountOpeningBalance.dataOpeningBalance,
-        rows = "",
-        totalDebit = totalCredit = 0,
-        codeNumberGeneral = codeNumberMain = codeNumberSub = textClass = additionalText = '';
-
-    $("#accountOpeningBalance-reffNumber").val(detailJournalRecap.REFFNUMBER);
-    $("#accountOpeningBalance-date").val(detailJournalRecap.DATETRANSACTION);
-    $("#accountOpeningBalance-description").val(detailJournalRecap.DESCRIPTION);
-
-    $.each(dataAccount, function (index, array) {
-        switch (array.LEVEL) {
-            case '1':
-            case 1:
-                codeNumberGeneral = array.ACCOUNTCODE;
-                codeNumberMain = '';
-                codeNumberSub = '';
-                textClass = '';
-                additionalText = '';
-                break;
-            case '2':
-            case 2:
-                codeNumberMain = array.ACCOUNTCODE;
-                codeNumberSub = '';
-                textClass = 'ml-10';
-                additionalText = '<span class="h4">↳ </span>';
-                break;
-            case '3':
-            case 3:
-                codeNumberSub = array.ACCOUNTCODE;
-                textClass = 'ml-20';
-                additionalText = '<span class="h4">↳ </span>';
-                break;
-        }
-
-        var objAccount = dataOpeningBalance.filter(function (item) {
-            if (item.IDACCOUNT === array.IDACCOUNT) return item;
-        });
-
-        var valueAccountDebit = objAccount.length > 0 ? objAccount[0].DEBIT : 0,
-            valueAccountCredit = objAccount.length > 0 ? objAccount[0].CREDIT : 0,
-            accountParentLength = dataAccount.filter(i => i.IDACCOUNTPARENT === array.IDACCOUNT).length,
-            elemInputDebit = accountParentLength <= 0 ? '<input type="text" class="form-control form-control-sm accountOpeningBalanceDebit text-right" id="accountOpeningBalanceDebit-' + array.IDACCOUNT + '" data-idAccount="' + array.IDACCOUNT + '" onkeypress="maskNumberInput(0, 99999999999, \'accountOpeningBalanceDebit-' + array.IDACCOUNT + '\')" onkeyup="calculateTotalNominal(\'D\')" value="' + numberFormat(valueAccountDebit) + '">' : "",
-            elemInputCredit = accountParentLength <= 0 ? '<input type="text" class="form-control form-control-sm accountOpeningBalanceCredit text-right" id="accountOpeningBalanceCredit-' + array.IDACCOUNT + '" data-idAccount="' + array.IDACCOUNT + '" onkeypress="maskNumberInput(0, 99999999999, \'accountOpeningBalanceCredit-' + array.IDACCOUNT + '\')" onkeyup="calculateTotalNominal(\'C\')" value="' + numberFormat(valueAccountCredit) + '">' : "";
-
-        rows += "<tr class='trAccountOpeningBalance' data-idAccount='" + array.IDACCOUNT + "'>" +
-            "<td class='searchTd pr-1' width='20'>" + codeNumberGeneral + "</td>" +
-            "<td class='searchTd px-1' width='20'>" + codeNumberMain + "</td>" +
-            "<td class='searchTd pl-1' width='40'>" + codeNumberSub + "</td>" +
-            "<td ><span class='searchTd " + textClass + "'>" + additionalText + array.ACCOUNTNAME + "</span></td>" +
-            "<td >" + array.DEFAULTDRCR + "</td>" +
-            "<td class='text-right'>" + elemInputDebit + "</td>" +
-            "<td class='text-right'>" + elemInputCredit + "</td>" +
-            "</tr>";
-
-        totalDebit += parseInt(valueAccountDebit);
-        totalCredit += parseInt(valueAccountCredit);
-    });
-
-    rows += "<tr>" +
-        "<td colspan='5'><b>TOTAL</b></td>" +
-        "<td class='text-right'><b id='accountOpeningBalance-totalDebit' class='mr-3'>" + numberFormat(totalDebit) + "</b></td>" +
-        "<td class='text-right'><b id='accountOpeningBalance-totalCredit' class='mr-3'>" + numberFormat(totalCredit) + "</b></td>" +
-        "</tr>";
-    $("#table-dataOpeningAccountBalance > tbody").html(rows);
-}
-
-function calculateTotalNominal(DRCR) {
-    var classInputElem = DRCR == 'D' ? 'accountOpeningBalanceDebit' : 'accountOpeningBalanceCredit',
-        idContainerTotalElem = DRCR == 'D' ? 'accountOpeningBalance-totalDebit' : 'accountOpeningBalance-totalCredit',
-        totalNominal = 0;
-
-    $('.' + classInputElem).each(function () {
-        var elemValue = $(this).val(),
-            elemValueNominal = elemValue == "" ? 0 : elemValue.replace(/\D/g, '');
-        totalNominal += parseInt(elemValueNominal) * 1;
-    });
-
-    $("#" + idContainerTotalElem).html(numberFormat(totalNominal));
-}
-
 $('#modal-editorAddAccount').off('shown.bs.modal');
 $('#modal-editorAddAccount').on('shown.bs.modal', function (e) {
-    $("#addAccount-optionAccountGeneral, #addAccount-optionAccountMain, #addAccount-optionDefaultDRCR, #addAccount-accountCode, #addAccount-optionOrderPosition, #addAccount-accountNameEng, #addAccount-accountNameIdn").prop('disabled', true);
+    $("#addAccount-optionAccountGeneral, #addAccount-optionAccountMain, #addAccount-optionDefaultDRCR, #addAccount-optionCompany, #addAccount-accountCode, #addAccount-optionOrderPosition, #addAccount-accountNameEng, #addAccount-accountNameIdn").prop('disabled', true);
     $('#form-editorAddAccount').trigger("reset");
     $("input[name='addAccount-radioAccountLevel']").off('change');
     $("input[name='addAccount-radioAccountLevel']").on('change', function (e) {
@@ -252,6 +173,7 @@ $('#modal-editorAddAccount').on('shown.bs.modal', function (e) {
 
     setOptionHelper('addAccount-optionAccountGeneral', 'dataAccountGeneral');
     setOptionHelper('addAccount-optionAccountMain', 'dataAccountMain', false, false, $('#addAccount-optionAccountGeneral').val());
+    setOptionHelper('addAccount-optionCompany', 'dataCompany');
 
     $('#addAccount-optionAccountGeneral').off('change');
     $('#addAccount-optionAccountGeneral').on('change', function (e) {
@@ -284,7 +206,7 @@ $('#modal-editorAddAccount').on('shown.bs.modal', function (e) {
         } else {
             $('button.sw-btn-next').removeClass('d-none');
             $('#finishSaveNewAccountButton').remove();
-            $("#addAccount-optionDefaultDRCR, #addAccount-accountCode, #addAccount-optionOrderPosition, #addAccount-accountNameEng, #addAccount-accountNameIdn").prop('disabled', true);
+            $("#addAccount-optionDefaultDRCR, #addAccount-optionCompany, #addAccount-accountCode, #addAccount-optionOrderPosition, #addAccount-accountNameEng, #addAccount-accountNameIdn").prop('disabled', true);
         }
 
     });
@@ -318,11 +240,14 @@ $('#modal-editorAddAccount').on('shown.bs.modal', function (e) {
 
                     switch (jqXHR.status) {
                         case 200:
-                            var detailNextStep = responseJSON.detailNextStep,
-                                defaultDRCR = detailNextStep.defaultDRCR,
-                                listOrderPosition = detailNextStep.listOrderPosition,
-                                lastNumber = detailNextStep.lastNumber;
+                            var detailNextStep      =   responseJSON.detailNextStep,
+                                defaultDRCR         =   detailNextStep.defaultDRCR,
+                                idCompany           =   detailNextStep.idCompany,
+                                disabledCompany     =   detailNextStep.disabledCompany,
+                                listOrderPosition   =   detailNextStep.listOrderPosition,
+                                lastNumber          =   detailNextStep.lastNumber;
                             $("#addAccount-optionDefaultDRCR").val(defaultDRCR);
+                            $("#addAccount-optionCompany").val(idCompany).prop('disabled', disabledCompany);
                             $("#addAccount-lastNumber").val(lastNumber);
                             $("#addAccount-optionOrderPosition").empty();
                             $.each(listOrderPosition, function (index, array) {
@@ -350,19 +275,21 @@ $('#modal-editorAddAccount').on('shown.bs.modal', function (e) {
 $("#form-editorAddAccount").off('submit');
 $("#form-editorAddAccount").on("submit", function (e) {
     e.preventDefault();
-    var accountLevel = $("input[name='addAccount-radioAccountLevel']:checked").val(),
-        idAccountGeneral = $('#addAccount-optionAccountGeneral').val(),
-        idAccountMain = $('#addAccount-optionAccountMain').val(),
-        defaultDRCR = $("#addAccount-optionDefaultDRCR").val(),
-        accountCode = $("#addAccount-accountCode").val(),
-        orderPosition = $("#addAccount-optionOrderPosition").val(),
-        accountNameEng = $("#addAccount-accountNameEng").val(),
-        accountNameIdn = $("#addAccount-accountNameIdn").val(),
-        lastNumberPosition = $("#addAccount-lastNumber").val();
+    var accountLevel        = $("input[name='addAccount-radioAccountLevel']:checked").val(),
+        idAccountGeneral    = $('#addAccount-optionAccountGeneral').val(),
+        idAccountMain       = $('#addAccount-optionAccountMain').val(),
+        idCompany           = $('#addAccount-optionCompany').val(),
+        defaultDRCR         = $("#addAccount-optionDefaultDRCR").val(),
+        accountCode         = $("#addAccount-accountCode").val(),
+        orderPosition       = $("#addAccount-optionOrderPosition").val(),
+        accountNameEng      = $("#addAccount-accountNameEng").val(),
+        accountNameIdn      = $("#addAccount-accountNameIdn").val(),
+        lastNumberPosition  = $("#addAccount-lastNumber").val();
     dataSend = {
         accountLevel: accountLevel,
         idAccountGeneral: idAccountGeneral,
         idAccountMain: idAccountMain,
+        idCompany: idCompany,
         defaultDRCR: defaultDRCR,
         accountCode: accountCode,
         orderPosition: orderPosition,
@@ -424,7 +351,7 @@ $('#modal-editorEditAccount').on('shown.bs.modal', function (e) {
             Authorization: 'Bearer ' + getUserToken()
         },
         beforeSend: function () {
-            $("#editAccount-optionAccountGeneral, #editAccount-optionAccountMain, #editAccount-optionDefaultDRCR, #editAccount-accountCode, #editAccount-optionOrderPosition, #editAccount-accountNameEng, #editAccount-accountNameIdn").prop('disabled', true);
+            $("#editAccount-optionAccountGeneral, #editAccount-optionAccountMain, #editAccount-optionDefaultDRCR, #editAccount-optionCompany, #editAccount-accountCode, #editAccount-optionOrderPosition, #editAccount-accountNameEng, #editAccount-accountNameIdn").prop('disabled', true);
             $("#editAccount-elemContainerGeneralAccount, #editAccount-elemContainerMainAccount").removeClass('d-none');
             $('#form-editorEditAccount').trigger("reset");
             NProgress.set(0.4);
@@ -437,12 +364,14 @@ $('#modal-editorEditAccount').on('shown.bs.modal', function (e) {
                 case 200:
                     var detailAccount = responseJSON.detailAccount,
                         arrOrderPosition = responseJSON.arrOrderPosition,
+                        accountOwnerDisabled = responseJSON.accountOwnerDisabled,
                         levelAccount = detailAccount.LEVEL * 1,
                         idAccountGeneralParent = levelAccount == 2 ? detailAccount.IDACCOUNTPARENT : '',
                         idAccountMainParent = levelAccount == 3 ? detailAccount.IDACCOUNTPARENT : '';
 
                     setOptionHelper('editAccount-optionAccountGeneral', 'dataAccountGeneral', idAccountGeneralParent);
                     setOptionHelper('editAccount-optionAccountMain', 'dataAccountMain', idAccountMainParent, false, idAccountGeneralParent);
+                    setOptionHelper('editAccount-optionCompany', 'dataCompany', detailAccount.IDCOMPANY);
                     if (levelAccount >= 2) $("#editAccount-optionAccountGeneral").prop('disabled', false);
                     if (levelAccount == 3) $("#editAccount-optionAccountMain").prop('disabled', false);
                     if (levelAccount <= 2) $("#editAccount-elemContainerMainAccount").addClass('d-none');
@@ -459,6 +388,7 @@ $('#modal-editorEditAccount').on('shown.bs.modal', function (e) {
                         dropdownParent: $("#modal-editorEditAccount")
                     });
 
+                    $("#editAccount-optionCompany").attr('disabled', accountOwnerDisabled);
                     $("#editAccount-optionDefaultDRCR").val(detailAccount.DEFAULTDRCR);
                     $("#editAccount-accountCode").val(detailAccount.ACCOUNTCODE);
                     $("#editAccount-accountNameEng").val(detailAccount.ACCOUNTNAMEENG);
@@ -493,6 +423,7 @@ $("#form-editorEditAccount").on("submit", function (e) {
     var idAccount = $('#editAccount-idAccount').val(),
         idAccountGeneral = $('#editAccount-optionAccountGeneral').val(),
         idAccountMain = $('#editAccount-optionAccountMain').val(),
+        idCompany = $('#editAccount-optionCompany').val(),
         accountLevel = $('#editAccount-accountLevel').val(),
         defaultDRCR = $("#editAccount-optionDefaultDRCR").val(),
         accountCode = $("#editAccount-accountCode").val(),
@@ -503,6 +434,7 @@ $("#form-editorEditAccount").on("submit", function (e) {
         idAccount: idAccount,
         idAccountGeneral: idAccountGeneral,
         idAccountMain: idAccountMain,
+        idCompany: idCompany,
         accountLevel: accountLevel,
         defaultDRCR: defaultDRCR,
         accountCode: accountCode,
@@ -654,6 +586,181 @@ $('#modal-sortAccount').on('shown.bs.modal', function (e) {
     });
 });
 
+function confirmDeleteAccount(idAccount, level, codeNumberGeneral, codeNumberMain, codeNumberSub, accountName) {
+    var codeNumberMain = codeNumberMain != '' ? '-' + codeNumberMain : codeNumberMain,
+        codeNumberSub = codeNumberSub != '' ? '-' + codeNumberSub : codeNumberSub,
+        confirmText = 'This account will be deleted from the system. Details ;<br/><br/>Code : <b>' + codeNumberGeneral + codeNumberMain + codeNumberSub + '</b><br/>Account Name : <b>' + accountName + '</b>.<br/><br/>Are you sure?';
+
+    $confirmDialog.find('#modal-confirm-body').html(confirmText);
+    $confirmDialog.find('#confirmBtn').attr('data-idAccount', idAccount).attr('data-accountLevel', level).attr('data-function', "deleteAccount");
+    $confirmDialog.modal('show');
+}
+
+$('#btnOpenOpeningAccountBalance').off('click');
+$('#btnOpenOpeningAccountBalance').on('click', function (e) {
+    toggleSlideContainer('slideContainerLeft', 'slideContainerRight');
+    $("#btnOpenOpeningAccountBalance, #btnAddAccount").addClass("d-none");
+    $("#btnCloseOpeningAccountBalance").removeClass("d-none");
+    getDataOpeningBalance();
+
+    $('#openingBalance-optionCompany').off('change');
+    $('#openingBalance-optionCompany').on('change', function (e) {
+        getDataOpeningBalance();
+    });
+});
+
+function getDataOpeningBalance() {
+    var idCompany   = $('#openingBalance-optionCompany').val(),
+        $tableBody  = $('#table-dataOpeningAccountBalance > tbody'),
+        columnNumber= $('#table-dataOpeningAccountBalance > thead > tr > th').length + 2,
+        dataSend    = { idCompany: idCompany };
+    $.ajax({
+        type: 'POST',
+        url: baseURL + "chartOfAccount/getDataOpeningBalance",
+        contentType: 'application/json',
+        dataType: 'json',
+        cache: false,
+        data: mergeDataSend(dataSend),
+        xhrFields: {
+            withCredentials: true
+        },
+        headers: {
+            Authorization: 'Bearer ' + getUserToken()
+        },
+        beforeSend: function () {
+            NProgress.set(0.4);
+            $tableBody.html("<tr><td colspan='" + columnNumber + "'><center><i class='fa fa-spinner fa-pulse'></i><br/>Loading data...</center></td></tr>");
+        },
+        complete: function (jqXHR, textStatus) {
+            var responseJSON = jqXHR.responseJSON,
+                rows = "";
+
+            switch (jqXHR.status) {
+                case 200:
+                    var dataAccount                 = responseJSON.dataAccount,
+                        dataAccountOpeningBalance   = responseJSON.dataAccountOpeningBalance,
+                        detailJournalRecap          = dataAccountOpeningBalance.detailJournalRecap,
+                        dataOpeningBalance          = dataAccountOpeningBalance.dataOpeningBalance,
+                        rows                        = "",
+                        totalDebit = totalCredit = 0,
+                        codeNumberGeneral = codeNumberMain = codeNumberSub = textClass = additionalText = '';
+
+                    $("#accountOpeningBalance-reffNumber").val(detailJournalRecap.REFFNUMBER);
+                    $("#accountOpeningBalance-date").val(detailJournalRecap.DATETRANSACTION);
+                    $("#accountOpeningBalance-description").val(detailJournalRecap.DESCRIPTION);
+
+                    $.each(dataAccount, function (index, array) {
+                        switch (array.LEVEL) {
+                            case '1':
+                            case 1:
+                                codeNumberGeneral = array.ACCOUNTCODE;
+                                codeNumberMain = '';
+                                codeNumberSub = '';
+                                textClass = '';
+                                additionalText = '';
+                                break;
+                            case '2':
+                            case 2:
+                                codeNumberMain = array.ACCOUNTCODE;
+                                codeNumberSub = '';
+                                textClass = 'ml-10';
+                                additionalText = '<span class="h4">↳ </span>';
+                                break;
+                            case '3':
+                            case 3:
+                                codeNumberSub = array.ACCOUNTCODE;
+                                textClass = 'ml-20';
+                                additionalText = '<span class="h4">↳ </span>';
+                                break;
+                        }
+
+                        var objAccount = dataOpeningBalance.filter(function (item) {
+                            if (item.IDACCOUNT === array.IDACCOUNT) return item;
+                        });
+
+                        var valueAccountDebit = objAccount.length > 0 ? objAccount[0].DEBIT : 0,
+                            valueAccountCredit = objAccount.length > 0 ? objAccount[0].CREDIT : 0,
+                            accountParentLength = dataAccount.filter(i => i.IDACCOUNTPARENT === array.IDACCOUNT).length,
+                            elemInputDebit = accountParentLength <= 0 ? '<input type="text" class="form-control form-control-sm accountOpeningBalanceDebit text-right" id="accountOpeningBalanceDebit-' + array.IDACCOUNT + '" data-idAccount="' + array.IDACCOUNT + '" onkeypress="maskNumberInput(0, 99999999999, \'accountOpeningBalanceDebit-' + array.IDACCOUNT + '\')" onkeyup="calculateTotalNominal(\'D\')" value="' + numberFormat(valueAccountDebit) + '">' : "",
+                            elemInputCredit = accountParentLength <= 0 ? '<input type="text" class="form-control form-control-sm accountOpeningBalanceCredit text-right" id="accountOpeningBalanceCredit-' + array.IDACCOUNT + '" data-idAccount="' + array.IDACCOUNT + '" onkeypress="maskNumberInput(0, 99999999999, \'accountOpeningBalanceCredit-' + array.IDACCOUNT + '\')" onkeyup="calculateTotalNominal(\'C\')" value="' + numberFormat(valueAccountCredit) + '">' : "";
+
+                        rows += "<tr class='trAccountOpeningBalance' data-idAccount='" + array.IDACCOUNT + "'>" +
+                                    "<td class='searchTd pr-1' width='20'>" + codeNumberGeneral + "</td>" +
+                                    "<td class='searchTd px-1' width='20'>" + codeNumberMain + "</td>" +
+                                    "<td class='searchTd pl-1' width='40'>" + codeNumberSub + "</td>" +
+                                    "<td ><span class='searchTd " + textClass + "'>" + additionalText + array.ACCOUNTNAME + "</span></td>" +
+                                    "<td >" + array.DEFAULTDRCR + "</td>" +
+                                    "<td class='text-right'>" + elemInputDebit + "</td>" +
+                                    "<td class='text-right'>" + elemInputCredit + "</td>" +
+                                "</tr>";
+
+                        totalDebit += parseInt(valueAccountDebit);
+                        totalCredit += parseInt(valueAccountCredit);
+                    });
+
+                    rows += "<tr>" +
+                        "<td colspan='5'><b>TOTAL</b></td>" +
+                        "<td class='text-right'><b id='accountOpeningBalance-totalDebit' class='mr-3'>" + numberFormat(totalDebit) + "</b></td>" +
+                        "<td class='text-right'><b id='accountOpeningBalance-totalCredit' class='mr-3'>" + numberFormat(totalCredit) + "</b></td>" +
+                        "</tr>";
+                    $tableBody.html(rows);
+                    break;
+                case 404:
+                default:
+                    $tableBody.html("<tr><td colspan='7' align='center'><center>" + getMessageResponse(jqXHR) + "</center></td></tr>");
+                    break;
+            }
+        }
+    }).always(function (jqXHR, textStatus) {
+        NProgress.done()
+        setUserToken(jqXHR)
+    });
+}    
+
+function getAccountOpeningBalance() {
+    var dataAccountOpeningBalance = [];
+    $('.trAccountOpeningBalance').each(function () {
+        var idAccount = $(this).attr('data-idAccount'),
+            debitElem = $("#accountOpeningBalanceDebit-" + idAccount),
+            creditElem = $("#accountOpeningBalanceCredit-" + idAccount);
+
+        if (debitElem.length > 0 && creditElem.length > 0) {
+            var debitValue = debitElem.val(),
+                debitValue = debitValue == "" ? 0 : debitValue.replace(/\D/g, ''),
+                creditValue = creditElem.val(),
+                creditValue = creditValue == "" ? 0 : creditValue.replace(/\D/g, ''),
+                drCrPosition = debitValue >= creditValue ? 'DR' : 'CR';
+            dataAccountOpeningBalance.push([idAccount, drCrPosition, parseInt(debitValue), parseInt(creditValue)]);
+        }
+    });
+    return dataAccountOpeningBalance;
+}
+
+$('#btnCloseOpeningAccountBalance').off('click');
+$('#btnCloseOpeningAccountBalance').on('click', function (e) {
+    closeOpeningAccountBalanceEditor();
+});
+
+function closeOpeningAccountBalanceEditor() {
+    toggleSlideContainer('slideContainerLeft', 'slideContainerRight');
+    $("#btnOpenOpeningAccountBalance, #btnAddAccount").removeClass("d-none");
+    $("#btnCloseOpeningAccountBalance").addClass("d-none");
+}
+
+function calculateTotalNominal(DRCR) {
+    var classInputElem = DRCR == 'D' ? 'accountOpeningBalanceDebit' : 'accountOpeningBalanceCredit',
+        idContainerTotalElem = DRCR == 'D' ? 'accountOpeningBalance-totalDebit' : 'accountOpeningBalance-totalCredit',
+        totalNominal = 0;
+
+    $('.' + classInputElem).each(function () {
+        var elemValue = $(this).val(),
+            elemValueNominal = elemValue == "" ? 0 : elemValue.replace(/\D/g, '');
+        totalNominal += parseInt(elemValueNominal) * 1;
+    });
+
+    $("#" + idContainerTotalElem).html(numberFormat(totalNominal));
+}
+
 $('#accountOpeningBalance-btnSaveAccountOpeningBalance').off('click');
 $('#accountOpeningBalance-btnSaveAccountOpeningBalance').on('click', function (e) {
     calculateTotalNominal('D');
@@ -674,27 +781,18 @@ $('#accountOpeningBalance-btnSaveAccountOpeningBalance').on('click', function (e
     }
 });
 
-function confirmDeleteAccount(idAccount, level, codeNumberGeneral, codeNumberMain, codeNumberSub, accountName) {
-    var codeNumberMain = codeNumberMain != '' ? '-' + codeNumberMain : codeNumberMain,
-        codeNumberSub = codeNumberSub != '' ? '-' + codeNumberSub : codeNumberSub,
-        confirmText = 'This account will be deleted from the system. Details ;<br/><br/>Code : <b>' + codeNumberGeneral + codeNumberMain + codeNumberSub + '</b><br/>Account Name : <b>' + accountName + '</b>.<br/><br/>Are you sure?';
-
-    $confirmDialog.find('#modal-confirm-body').html(confirmText);
-    $confirmDialog.find('#confirmBtn').attr('data-idAccount', idAccount).attr('data-accountLevel', level).attr('data-function', "deleteAccount");
-    $confirmDialog.modal('show');
-}
-
 $('#confirmBtn').off('click');
 $('#confirmBtn').on('click', function (e) {
     var funcName = $confirmDialog.find('#confirmBtn').attr('data-function'),
         idAccount = funcName == "saveAccountOpeningBalance" ? "" : $confirmDialog.find('#confirmBtn').attr('data-idAccount'),
+        idCompany = funcName == "saveAccountOpeningBalance" ? $("#openingBalance-optionCompany").val() : "",
         accountLevel = funcName == "saveAccountOpeningBalance" ? "" : $confirmDialog.find('#confirmBtn').attr('data-accountLevel'),
         reffNumberJournalOpeningBalance = funcName == "saveAccountOpeningBalance" ? $("#accountOpeningBalance-reffNumber").val() : "",
         dateJournalOpeningBalance = funcName == "saveAccountOpeningBalance" ? $("#accountOpeningBalance-date").val() : "",
         descriptionJournalOpeningBalance = funcName == "saveAccountOpeningBalance" ? $("#accountOpeningBalance-description").val() : "",
         dataAccountOpeningBalance = getAccountOpeningBalance(),
         dataSend = funcName == "saveAccountOpeningBalance" ?
-            { reffNumberJournalOpeningBalance: reffNumberJournalOpeningBalance, dateJournalOpeningBalance: dateJournalOpeningBalance, descriptionJournalOpeningBalance: descriptionJournalOpeningBalance, dataAccountOpeningBalance: dataAccountOpeningBalance } :
+            { idCompany:idCompany, reffNumberJournalOpeningBalance: reffNumberJournalOpeningBalance, dateJournalOpeningBalance: dateJournalOpeningBalance, descriptionJournalOpeningBalance: descriptionJournalOpeningBalance, dataAccountOpeningBalance: dataAccountOpeningBalance } :
             { idAccount: idAccount, accountLevel: accountLevel };
 
     $.ajax({
@@ -730,42 +828,5 @@ $('#confirmBtn').on('click', function (e) {
         setUserToken(jqXHR);
     });
 });
-
-function getAccountOpeningBalance() {
-    var dataAccountOpeningBalance = [];
-    $('.trAccountOpeningBalance').each(function () {
-        var idAccount = $(this).attr('data-idAccount'),
-            debitElem = $("#accountOpeningBalanceDebit-" + idAccount),
-            creditElem = $("#accountOpeningBalanceCredit-" + idAccount);
-
-        if (debitElem.length > 0 && creditElem.length > 0) {
-            var debitValue = debitElem.val(),
-                debitValue = debitValue == "" ? 0 : debitValue.replace(/\D/g, ''),
-                creditValue = creditElem.val(),
-                creditValue = creditValue == "" ? 0 : creditValue.replace(/\D/g, ''),
-                drCrPosition = debitValue >= creditValue ? 'DR' : 'CR';
-            dataAccountOpeningBalance.push([idAccount, drCrPosition, parseInt(debitValue), parseInt(creditValue)]);
-        }
-    });
-    return dataAccountOpeningBalance;
-}
-
-$('#btnOpenOpeningAccountBalance').off('click');
-$('#btnOpenOpeningAccountBalance').on('click', function (e) {
-    toggleSlideContainer('slideContainerLeft', 'slideContainerRight');
-    $("#btnOpenOpeningAccountBalance, #btnAddAccount").addClass("d-none");
-    $("#btnCloseOpeningAccountBalance").removeClass("d-none");
-});
-
-$('#btnCloseOpeningAccountBalance').off('click');
-$('#btnCloseOpeningAccountBalance').on('click', function (e) {
-    closeOpeningAccountBalanceEditor();
-});
-
-function closeOpeningAccountBalanceEditor() {
-    toggleSlideContainer('slideContainerLeft', 'slideContainerRight');
-    $("#btnOpenOpeningAccountBalance, #btnAddAccount").removeClass("d-none");
-    $("#btnCloseOpeningAccountBalance").addClass("d-none");
-}
 
 chartOfAccountFunc();

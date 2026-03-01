@@ -2,11 +2,13 @@ var $confirmDialog = $('#modal-confirm-action');
 if (listAssetOwnedFunc == null) {
     var listAssetOwnedFunc = function () {
         $(document).ready(function () {
+            setOptionHelper('assetsList-optionCompany', 'dataCompany');
             setOptionHelper('assetsList-optionAssetType', 'dataAssetType');
-            setOptionHelper('depreciationPosting-optionAssetType', 'dataAssetType');
-            setOptionHelper('editorAssetData-optionAssetType', 'dataAssetType');
             setOptionHelper('assetsList-optionDepreciationGroup', 'dataDepreciationGroup');
+            setOptionHelper('depreciationPosting-optionAssetType', 'dataAssetType');
             setOptionHelper('depreciationPosting-optionDepreciationGroup', 'dataDepreciationGroup');
+            setOptionHelper('editorAssetData-optionCompany', 'dataCompany');
+            setOptionHelper('editorAssetData-optionAssetType', 'dataAssetType');
             setOptionHelper('editorAssetData-optionDepreciationGroup', 'dataDepreciationGroup');
             getDataOptionByKey('templateJournalData', 'dataTemplateJournalDepreciation', 'Penyusutan Aset', function () {
                 setOptionHelper('editorAssetData-optionTemplateJournal', 'dataTemplateJournalDepreciation');
@@ -17,8 +19,8 @@ if (listAssetOwnedFunc == null) {
     }
 }
 
-$('#assetsList-optionAssetType, #assetsList-optionDepreciationGroup').off('change');
-$('#assetsList-optionAssetType, #assetsList-optionDepreciationGroup').on('change', function (e) {
+$('#assetsList-optionCompany, #assetsList-optionAssetType, #assetsList-optionDepreciationGroup').off('change');
+$('#assetsList-optionCompany, #assetsList-optionAssetType, #assetsList-optionDepreciationGroup').on('change', function (e) {
     getDataAsset();
 });
 
@@ -36,11 +38,13 @@ function generateDataTable(page) {
 function getDataAsset(page = 1) {
     var $tableBody = $('#table-dataAsset > tbody'),
         columnNumber = $('#table-dataAsset > thead > tr > th').length,
+        idCompany = $('#assetsList-optionCompany').val(),
         idAssetType = $('#assetsList-optionAssetType').val(),
         idDepreciationGroup = $('#assetsList-optionDepreciationGroup').val(),
         searchKeyword = $('#assetsList-searchKeyword').val(),
         dataSend = {
             page: page,
+            idCompany: idCompany,
             idAssetType: idAssetType,
             idDepreciationGroup: idDepreciationGroup,
             searchKeyword: searchKeyword
@@ -78,6 +82,7 @@ function getDataAsset(page = 1) {
                                 btnEdit = '<i class="text-info fa fa-pencil text16px mr-2" data-idAsset="' + array.IDASSET + '" data-toggle="modal" data-target="#modal-editorAssetData"></i>',
                                 btnDelete = '<i class="text-info fa fa-trash text16px" onclick="confirmDeleteAssetData(\'' + array.IDASSET + '\', \'' + array.ASSETTYPE + '\', \'' + array.ASSETNAME + '\', \'' + array.DESCRIPTION + '\')"></i>';
                             rows += "<tr>" +
+                                "<td>" + array.COMPANYNAME + "</td>" +
                                 "<td>" + array.ASSETTYPE + "</td>" +
                                 "<td>" + array.ASSETNAME + "</td>" +
                                 "<td>" + array.DESCRIPTION + "</td>" +
@@ -127,7 +132,7 @@ function getDataAsset(page = 1) {
                     beforeSend: function () {
                         $("#btnAddAssetData").addClass("d-none");
                         $("#btnCloseSetDetailAsset").removeClass("d-none");
-                        $("#detailAsset-assetType, #detailAsset-assetName, #detailAsset-description, #detailAsset-depreciationGroup, #detailAsset-benefitTime, #detailAsset-purchaseDate, #detailAsset-templateJournalName").html("-");
+                        $("#detailAsset-company, #detailAsset-assetType, #detailAsset-assetName, #detailAsset-description, #detailAsset-depreciationGroup, #detailAsset-benefitTime, #detailAsset-purchaseDate, #detailAsset-templateJournalName").html("-");
                         $("#detailAsset-purchasePrice, #detailAsset-residualValue, #detailAsset-depreciationValue, #detailAsset-depreciationPerMonth").html("-");
                         $("#detailAsset-purchaseJournalDate, #detailAsset-purchaseJournalReffNumber, #detailAsset-purchaseJournalDescription, #detailAsset-purchaseJournalNominalTotal").html("-");
                         $("#detailAsset-accountJournal").html("");
@@ -150,6 +155,7 @@ function getDataAsset(page = 1) {
                                     listDetailJournal = detailPurchaseJournal.listDetailJournal,
                                     elemAccountJournal = rowsDepreciation = '';
 
+                                $("#detailAsset-company").html(detailAsset.COMPANYNAME);
                                 $("#detailAsset-assetType").html(detailAsset.ASSETTYPE);
                                 $("#detailAsset-assetName").html(detailAsset.ASSETNAME);
                                 $("#detailAsset-description").html(detailAsset.DESCRIPTION);
@@ -275,6 +281,7 @@ $('#modal-editorAssetData').on('shown.bs.modal', function (e) {
                             detailJournalRecap = detailPurchaseJournal.detailRecap,
                             listDetailJournal = detailPurchaseJournal.listDetailJournal;
 
+                        $("#editorAssetData-optionCompany").val(detailAsset.IDCOMPANY);
                         $("#editorAssetData-optionAssetType").val(detailAsset.IDASSETTYPE);
                         $("#editorAssetData-optionDepreciationGroup").val(detailAsset.IDASSETDEPRECIATIONGROUP);
                         $("#editorAssetData-optionTemplateJournal").val(detailAsset.IDJOURNALTEMPLATERECAP);
@@ -462,6 +469,7 @@ $("#form-editorAssetData").off('submit');
 $("#form-editorAssetData").on("submit", function (e) {
     e.preventDefault();
     var idAsset = $('#editorAssetData-idAsset').val(),
+        idCompany = $('#editorAssetData-optionCompany').val(),
         idDepreciationGroup = $('#editorAssetData-optionDepreciationGroup').val(),
         idTemplateJournal = $('#editorAssetData-optionTemplateJournal').val(),
         idAssetType = $('#editorAssetData-optionAssetType').val(),
@@ -474,6 +482,7 @@ $("#form-editorAssetData").on("submit", function (e) {
 
     var dataSend = {
         idAsset: idAsset,
+        idCompany: idCompany,
         idAssetType: idAssetType,
         idDepreciationGroup: idDepreciationGroup,
         idTemplateJournal: idTemplateJournal,
@@ -570,7 +579,6 @@ $("#form-editorAssetData").on("submit", function (e) {
 });
 
 function confirmDeleteAssetData(idAsset, assetType, assetName, description) {
-
     var confirmText = 'This asset will be deleted from the system. Details ;<br/><br/>' +
         '<div class="order-details-customer-info">' +
         '<ul>' +
@@ -584,12 +592,10 @@ function confirmDeleteAssetData(idAsset, assetType, assetName, description) {
     $confirmDialog.find('#modal-confirm-body').html(confirmText);
     $confirmDialog.find('#confirmBtn').attr('data-idAsset', idAsset).attr('data-function', "deleteDataAsset");
     $confirmDialog.modal('show');
-
 }
 
 $('#confirmBtn').off('click');
 $('#confirmBtn').on('click', function (e) {
-
     var idAsset = $confirmDialog.find('#confirmBtn').attr('data-idAsset'),
         funcName = $confirmDialog.find('#confirmBtn').attr('data-function'),
         dataSend = { idAsset: idAsset };
@@ -641,9 +647,9 @@ $("#depreciationPosting-searchKeyword").on('keypress', function (e) {
 });
 
 function getDataDepreciationPosting() {
-    var $tableBody = $('#table-dataDepreciationPosting > tbody'),
-        columnNumber = $('#table-dataAsset > thead > tr > th').length,
-        dataSend = {};
+    var $tableBody  = $('#table-dataDepreciationPosting > tbody'),
+        columnNumber= $('#table-dataAsset > thead > tr > th').length,
+        dataSend    = {};
     $.ajax({
         type: 'POST',
         url: baseURL + "listAssetOwned/getDataDepreciationPosting",
@@ -692,36 +698,39 @@ function getDataDepreciationPosting() {
                             });
 
                             rows += "<tr " +
-                                "data-depreciationPeriod='" + depreciationPeriod + "' " +
-                                "data-assetType='" + array.IDASSETTYPE + "' " +
-                                "data-depreciationGroup='" + array.IDASSETDEPRECIATIONGROUP + "' " +
-                                "data-assetName='" + array.ASSETNAME + "' " +
-                                "class='trDataDepreciationPosting'>" +
-                                "<td>" + array.ASSETTYPE + "<br/>" + array.ASSETNAME + "<br/>" + array.ASSETDEPRECIATIONGROUPNAME + "</td>" +
-                                "<td>" +
-                                "<div class='order-details-customer-info mb-20'>" +
-                                "<ul>" +
-                                "<li> <span>Purchase Date</span> <span>" + array.PURCHASEDATESTR + "</span> </li>" +
-                                "<li> <span>Purchase Price</span> <span class='text-right'>" + numberFormat(array.PURCHASEPRICE) + "</span> </li>" +
-                                "<li> <span>Residual Value</span> <span class='text-right'>" + numberFormat(array.RESIDUALVALUE) + "</span> </li>" +
-                                "<li> <span>Depreciation Value</span> <span class='text-right'>" + numberFormat(array.DEPRECIATIONVALUE) + "</span> </li>" +
-                                "</ul >" +
-                                "</div >" +
-                                "</td>" +
-                                "<td class='text-right'>" + array.DEPRECIATIONNUMBER + "</td>" +
-                                "<td>" + array.DEPRECIATIONDATESTR + "</td>" +
-                                "<td>" + journalDescription + "</td>" +
-                                "<td>" + journalAccounts + "</td>" +
-                                "<td class='text-right'>" + numberFormat(array.DEPRECIATIONVALUEJOURNAL) + "</td>" +
-                                "<td class='text-center'>" + btnShowPostingForm + "</td>" +
+                                    "data-idAssetDepreciation='" + array.IDASSETDEPRECIATION + "' " +
+                                    "data-depreciationPeriod='" + depreciationPeriod + "' " +
+                                    "data-assetType='" + array.IDASSETTYPE + "' " +
+                                    "data-depreciationGroup='" + array.IDASSETDEPRECIATIONGROUP + "' " +
+                                    "data-assetName='" + array.ASSETNAME + "' " +
+                                    "class='trDataDepreciationPosting'>" +
+                                        "<td>" + array.ASSETTYPE + "<br/>" + array.ASSETNAME + "<br/>" + array.ASSETDEPRECIATIONGROUPNAME + "</td>" +
+                                        "<td>" +
+                                            "<div class='order-details-customer-info mb-20'>" +
+                                                "<ul>" +
+                                                    "<li> <span>Purchase Date</span> <span>" + array.PURCHASEDATESTR + "</span> </li>" +
+                                                    "<li> <span>Purchase Price</span> <span class='text-right'>" + numberFormat(array.PURCHASEPRICE) + "</span> </li>" +
+                                                    "<li> <span>Residual Value</span> <span class='text-right'>" + numberFormat(array.RESIDUALVALUE) + "</span> </li>" +
+                                                    "<li> <span>Depreciation Value</span> <span class='text-right'>" + numberFormat(array.DEPRECIATIONVALUE) + "</span> </li>" +
+                                                "</ul>" +
+                                            "</div >" +
+                                        "</td>" +
+                                        "<td class='text-right'>" + array.DEPRECIATIONNUMBER + "</td>" +
+                                        "<td>" + array.DEPRECIATIONDATESTR + "</td>" +
+                                        "<td>" + journalDescription + "</td>" +
+                                        "<td>" + journalAccounts + "</td>" +
+                                        "<td class='text-right'>" + numberFormat(array.DEPRECIATIONVALUEJOURNAL) + "</td>" +
+                                        "<td class='text-center'>" + btnShowPostingForm + "</td>" +
                                 "</tr>";
                         });
 
-                        rows += "<tr id='trNoDataDepreciationPosting' class='d-none'><td colspan='8' class='text-center'>No data found</td></tr>";
+                        rows += "<tr id='trNoDataDepreciationPosting' class='d-none'><td colspan='" + columnNumber + "' class='text-center'>No data found</td></tr>";
                         generateOptionDropdownDepreciationPeriod(arrDepreciationPeriod);
                     }
+                    $("#depreciationPosting-alert").removeClass('alert-success').addClass('alert-warning').html(getMessageResponse(jqXHR));
                     break;
                 case 404:
+                    $("#depreciationPosting-alert").removeClass('alert-warning').addClass('alert-success').html(getMessageResponse(jqXHR));
                 default:
                     break;
             }
@@ -757,23 +766,26 @@ $("#depreciationPosting-searchKeyword").on('keypress', function (e) {
 });
 
 function filterDataDepreciationPosting() {
-    var filterDepreciationPeriod = $("#depreciationPosting-optionDepreciationPeriod").val(),
-        filterAssetType = $("#depreciationPosting-optionAssetType").val(),
+    var filterDepreciationPeriod= $("#depreciationPosting-optionDepreciationPeriod").val(),
+        filterAssetType         = $("#depreciationPosting-optionAssetType").val(),
         filterDepreciationGroup = $("#depreciationPosting-optionDepreciationGroup").val(),
-        filterSearchKeyword = $("#depreciationPosting-searchKeyword").val(),
-        totalRowShown = 0;
+        filterSearchKeyword     = $("#depreciationPosting-searchKeyword").val(),
+        totalRowShown           = 0,
+        arrIdAssetsDepreciation	= [];
 
     $('.trDataDepreciationPosting').each(function (index, elemObject) {
-        var trDepreciationPeriod = $(this).attr('data-depreciationPeriod'),
-            trAssetType = $(this).attr('data-assetType'),
-            trDepreciationGroup = $(this).attr('data-depreciationGroup'),
-            trAssetName = $(this).attr('data-assetName'),
+        var trIdAssetDepreciation   = $(this).attr('data-idAssetDepreciation'),
+            trDepreciationPeriod    = $(this).attr('data-depreciationPeriod'),
+            trAssetType             = $(this).attr('data-assetType'),
+            trDepreciationGroup     = $(this).attr('data-depreciationGroup'),
+            trAssetName             = $(this).attr('data-assetName'),
             matchDepreciationPeriod = filterDepreciationPeriod == trDepreciationPeriod ? true : false,
-            matchAssetType = filterAssetType != "" && filterAssetType == trAssetType ? true : filterAssetType == "" ? true : false,
-            matchDepreciationGroup = filterDepreciationGroup != "" && filterDepreciationGroup == trDepreciationGroup ? true : filterDepreciationGroup == "" ? true : false,
-            matchSearchKeyword = filterSearchKeyword != "" && trAssetName.includes(filterSearchKeyword) ? true : filterSearchKeyword == "" ? true : false;
+            matchAssetType          = filterAssetType != "" && filterAssetType == trAssetType ? true : filterAssetType == "" ? true : false,
+            matchDepreciationGroup  = filterDepreciationGroup != "" && filterDepreciationGroup == trDepreciationGroup ? true : filterDepreciationGroup == "" ? true : false,
+            matchSearchKeyword      = filterSearchKeyword != "" && trAssetName.includes(filterSearchKeyword) ? true : filterSearchKeyword == "" ? true : false;
 
         if (matchDepreciationPeriod && matchAssetType && matchDepreciationGroup && matchSearchKeyword) {
+            arrIdAssetsDepreciation.push(trIdAssetDepreciation);
             $(this).removeClass('d-none');
             totalRowShown++;
         } else {
@@ -786,11 +798,18 @@ function filterDataDepreciationPosting() {
     } else {
         $("#trNoDataDepreciationPosting").removeClass('d-none');
     }
+
+    arrIdAssetsDepreciation	=	arrIdAssetsDepreciation.length <= 0 ? "" : arrIdAssetsDepreciation.toString();
+    $("#depreciationPosting-arrIdAssetsDepreciation").val(arrIdAssetsDepreciation);
 }
 
 $('#modal-editorAssetDepreciation').off('shown.bs.modal');
 $('#modal-editorAssetDepreciation').on('shown.bs.modal', function (e) {
     var idAssetDepreciation = $(e.relatedTarget).attr('data-idAssetDepreciation');
+    setDetailsAssetDepreciation(idAssetDepreciation);
+});
+
+function setDetailsAssetDepreciation(idAssetDepreciation) {
     $("#editorAssetDepreciation-reffNumber, #editorAssetDepreciation-journalDate, #editorAssetDepreciation-journalDescription").val('');
     $("#editorAssetDepreciation-idAssetDepreciation").val(0);
 
@@ -830,6 +849,7 @@ $('#modal-editorAssetDepreciation').on('shown.bs.modal', function (e) {
                         $("#editorAssetDepreciation-journalDate").val(detailDepreciation.DEPRECIATIONDATE);
                         $("#editorAssetDepreciation-journalDescription").val(detailDepreciation.JOURNALDESCRIPTION);
                         $("#editorAssetDepreciation-idAssetDepreciation").val(idAssetDepreciation);
+                        $("#editorAssetDepreciation-idCompany").val(detailDepreciation.IDCOMPANY);
 
                         $.each(detailTemplateJournal, function (index, array) {
                             var idAccount = array.IDACCOUNT,
@@ -873,6 +893,7 @@ $('#modal-editorAssetDepreciation').on('shown.bs.modal', function (e) {
                         $("#form-editorAssetDepreciation").on("submit", function (e) {
                             e.preventDefault();
                             var idAssetDepreciation = $('#editorAssetDepreciation-idAssetDepreciation').val(),
+                                idCompany = $('#editorAssetDepreciation-idCompany').val(),
                                 reffNumber = $('#editorAssetDepreciation-reffNumber').val(),
                                 journalDate = $('#editorAssetDepreciation-journalDate').val(),
                                 journalDescription = $('#editorAssetDepreciation-journalDescription').val(),
@@ -914,6 +935,7 @@ $('#modal-editorAssetDepreciation').on('shown.bs.modal', function (e) {
                             } else {
                                 var dataSend = {
                                     idAssetDepreciation: idAssetDepreciation,
+                                    idCompany: idCompany,
                                     reffNumber: reffNumber,
                                     journalDate: journalDate,
                                     journalNominal: totalNominalDR,
@@ -972,6 +994,40 @@ $('#modal-editorAssetDepreciation').on('shown.bs.modal', function (e) {
             setUserToken(jqXHR);
         });
     }
-});
+    setDataNavigationAssetDepreciationEditor(idAssetDepreciation);
+}
+
+function setDataNavigationAssetDepreciationEditor(idAssetDepreciation) {
+    var arrIdAssetsDepreciation	=	$("#depreciationPosting-arrIdAssetsDepreciation").val(),
+        arrIdAssetsDepreciation	=	arrIdAssetsDepreciation.split(","),
+        indexActiveData			=	arrIdAssetsDepreciation.indexOf(idAssetDepreciation+""),
+        nextIndex				=	indexActiveData + 1,
+        previousIndex			=	indexActiveData - 1;
+        
+    if(indexActiveData == -1 || arrIdAssetsDepreciation.length == 1){
+        $("#editorAssetDepreciation-previousData, #editorAssetDepreciation-nextData").addClass("d-none").off('click');
+    } else if(indexActiveData == 0) {
+        $("#editorAssetDepreciation-previousData").addClass("d-none").off('click');
+        $("#editorAssetDepreciation-nextData").removeClass("d-none").off('click');
+        $('#editorAssetDepreciation-nextData').on('click', function(e) {
+            setDetailsAssetDepreciation(arrIdAssetsDepreciation[nextIndex], false);
+        });
+    } else if(nextIndex == arrIdAssetsDepreciation.length) {
+        $("#editorAssetDepreciation-nextData").addClass("d-none").off('click');
+        $("#editorAssetDepreciation-previousData").removeClass("d-none").off('click');
+        $('#editorAssetDepreciation-previousData').on('click', function(e) {
+            setDetailsAssetDepreciation(arrIdAssetsDepreciation[previousIndex], false);
+        });
+    } else {
+        $("#editorAssetDepreciation-previousData, #editorAssetDepreciation-nextData").removeClass("d-none").off('click');
+        
+        $('#editorAssetDepreciation-previousData').on('click', function(e) {
+            setDetailsAssetDepreciation(arrIdAssetsDepreciation[previousIndex], false);
+        });
+        $('#editorAssetDepreciation-nextData').on('click', function(e) {
+            setDetailsAssetDepreciation(arrIdAssetsDepreciation[nextIndex], false);
+        });
+    }
+}
 
 listAssetOwnedFunc();

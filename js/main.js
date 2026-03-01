@@ -1,6 +1,5 @@
 "use strict";
 
-//OK
 function dismissAllNotification(openedMenu = false) {
     $.ajax({
         type: "POST",
@@ -35,7 +34,6 @@ function dismissAllNotification(openedMenu = false) {
     });
 }
 
-//OK
 function dismissNotification(idNotificationUserAdmin) {
     var dataSend = { idNotificationUserAdmin: idNotificationUserAdmin };
     $.ajax({
@@ -63,7 +61,6 @@ function dismissNotification(idNotificationUserAdmin) {
     });
 }
 
-//OK
 function generateElemNotification(
     totalUnreadNotification,
     unreadNotificationArray
@@ -129,7 +126,6 @@ function generateElemNotification(
     }
 }
 
-//OK
 function getUnreadNotificationList() {
     $.ajax({
         type: "POST",
@@ -278,7 +274,6 @@ $(document).ready(function () {
     var $window = $(window);
     var $body = $("body");
 
-    //OK
     if ($(".adomx-dropdown").length) {
         var $adomxDropdown = $(".adomx-dropdown"),
             $adomxDropdownMenu = $adomxDropdown.find(".adomx-dropdown-menu");
@@ -693,19 +688,16 @@ function generateDatePickerElem() {
     });
 }
 
-//OK
 function resetPage() {
     if ($("#page").length) {
         $("#page").val(1);
     }
 }
 
-//OK
 function generateDataInfo(idcontainer, datastart, dataend, datatotal) {
     $("#" + idcontainer).html("Show data from " + numberFormat(datastart) + " to " + numberFormat(dataend) + ". Total " + numberFormat(datatotal) + " data");
 }
 
-//OK
 function setOptionHelper(
     elementIDArr,
     table,
@@ -788,7 +780,6 @@ function setOptionHelper(
     });
 }
 
-//OK
 function updateDataOptionHelper(arrayName, arrayValue) {
     var dataOptionHelper = JSON.parse(localStorage.getItem("optionHelper"));
     dataOptionHelper[arrayName] = arrayValue;
@@ -796,7 +787,6 @@ function updateDataOptionHelper(arrayName, arrayValue) {
     localStorage.setItem("optionHelper", JSON.stringify(dataOptionHelper));
 }
 
-//OK
 function maskNumberInput(
     minValue = 0,
     maxValue = false,
@@ -823,22 +813,67 @@ function maskNumberInput(
             return;
         }
 
-        maxValue = decimalInput === true ? 99 : maxValue;
-        minValue = decimalInput === true ? 0 : minValue;
         var $this = $(this),
             showcomma = $this.hasClass("nocomma") ? false : true,
             showzero = $this.hasClass("nozero") ? false : true,
             decimalInput = $this.hasClass("decimalInput"),
-            input = $this.val(),
-            input = input.replace(/[^0-9.]/g, '');
+            input = $this.val();
 
-        if (!decimalInput) {
+        // Hapus semua karakter kecuali angka dan titik
+        input = input.replace(/[^0-9.]/g, '');
+
+        if (decimalInput) {
+            // Pastikan hanya ada satu titik
+            var parts = input.split('.');
+            if (parts.length > 2) {
+                input = parts[0] + '.' + parts.slice(1).join('');
+                parts = input.split('.');
+            }
+            
+            // Limit 2 decimal places
+            if (parts.length === 2 && parts[1].length > 2) {
+                parts[1] = parts[1].substring(0, 2);
+                input = parts[0] + '.' + parts[1];
+            }
+            
+            // Apply min/max to integer part
+            var integerPart = parts[0] ? parseInt(parts[0], 10) : 0;
+            if (integerPart < minValue) {
+                integerPart = minValue;
+            }
+            if (maxValue !== false && integerPart > maxValue) {
+                integerPart = maxValue;
+            }
+            
+            // Format dengan koma ribuan
+            var formattedInteger = integerPart.toLocaleString("en-US");
+            
+            $this.val(function() {
+                if (parts.length === 2) {
+                    // Ada titik desimal
+                    return formattedInteger + '.' + parts[1];
+                } else if (input.endsWith('.')) {
+                    // User baru mengetik titik
+                    return formattedInteger + '.';
+                } else {
+                    // Tidak ada desimal
+                    if (showzero) {
+                        return integerPart === 0 ? "0" : formattedInteger;
+                    } else {
+                        return integerPart === 0 ? "" : formattedInteger;
+                    }
+                }
+            });
+            
+            if (typeof callback == "function") {
+                callback(input);
+            }
+        } else {
+            // Non-decimal input
             input = input < minValue ? minValue : parseInt(input, 10);
             input = maxValue != false && input > maxValue ? maxValue : parseInt(input, 10);
-        }
 
-        $this.val(function () {
-            if (!decimalInput) {
+            $this.val(function () {
                 if (showcomma) {
                     input = input ? parseInt(input, 10) : 0;
                     if (showzero) {
@@ -849,18 +884,15 @@ function maskNumberInput(
                 } else {
                     return input;
                 }
-            } else {
-                return input;
-            }
-
+            });
+            
             if (typeof callback == "function") {
                 callback(input);
             }
-        });
+        }
     });
 }
 
-//OK
 function replaceAll(str, find, replace) {
     if (str === undefined || str === null) {
         return "";
@@ -868,17 +900,19 @@ function replaceAll(str, find, replace) {
     return str.replace(new RegExp(find, "g"), replace);
 }
 
-//OK
-function numberFormat(number) {
-    if (number % 1 == 0) {
-        number = number ? parseInt(number, 10) : 0;
+function numberFormat(number, decimalPlace = 0) {
+    if (number === undefined || number === null) {
+        return decimalPlace > 0 ? "0." + "0".repeat(decimalPlace) : "0";
     }
-    return number === 0 || number === undefined || number === null
-        ? "0"
-        : number.toLocaleString("en-US");
+    
+    number = parseFloat(number) || 0;
+    
+    return number.toLocaleString("en-US", {
+        minimumFractionDigits: decimalPlace,
+        maximumFractionDigits: decimalPlace
+    });
 }
 
-//OK
 function convertSerializeArrayToObject(dataArray) {
     var dataObj = {};
 
@@ -889,7 +923,6 @@ function convertSerializeArrayToObject(dataArray) {
     return dataObj;
 }
 
-//OK
 function generatePagination(
     idcontainer,
     page,
@@ -952,7 +985,6 @@ function generatePagination(
     $("#" + idcontainer).html(prevButton + pagesBtn + nextButton);
 }
 
-//OK
 $("#modal-userProfile").off("show.bs.modal");
 $("#modal-userProfile").on("show.bs.modal", function () {
     $.ajax({
@@ -1040,7 +1072,6 @@ $("#modal-userProfile").on("show.bs.modal", function () {
     });
 });
 
-//OK
 function generateWarningMessageResponse(jqXHR) {
     var responseMessage = getMessageResponse(jqXHR);
     showWarning(responseMessage);
@@ -1062,7 +1093,6 @@ function getMessageResponse(jqXHR) {
     return responseMessage;
 }
 
-//OK
 function showWarning(message) {
     $("#modalWarning").on("show.bs.modal", function () {
         $("#modalWarningBody").html(message);
@@ -1082,7 +1112,6 @@ function searchForArray(haystack, needle) {
     return -1;
 }
 
-//OK
 function toggleSlideContainer(leftContainer, rightContainer) {
     if ($("#" + leftContainer).hasClass("show")) {
         $("#" + leftContainer)
@@ -1156,7 +1185,6 @@ function generateButtonMessageDetail(
     );
 }
 
-//OK
 function generateDataParamNotif(idNotificationUserAdmin, idMessageType, idPrimary) {
     var urlView = "",
         aliasView = "",
@@ -1286,7 +1314,6 @@ function jumpFocusToElement(elementID) {
     }
 }
 
-//OK
 function buildPINInputEvent(className) {
     $("." + className).val('');
     const inputs = document.querySelectorAll('input.' + className);
@@ -1437,8 +1464,9 @@ function generateTableListAccountCheckbox(dataAllAccountJournal, tableAccountNam
         textClass = '',
         additionalText = '',
         rowsAccount = '';
+        
     $.each(dataAllAccountJournal, function (index, array) {
-        var isParentAccount = dataAllAccountJournal.filter(obj => obj.IDACCOUNTPARENT.includes(array.IDACCOUNT)).length > 0 ? true : false,
+        var isParentAccount = dataAllAccountJournal.some(obj => String(obj.IDACCOUNTPARENT) === String(array.IDACCOUNT)),
             checkboxAccount = !isParentAccount ? '<label class="adomx-checkbox"><input type="checkbox" data-idAccount="' + array.IDACCOUNT + '" data-idAccountParent="' + array.IDACCOUNTPARENT + '" data-levelAccount="' + array.LEVEL + '" data-accountName="' + array.ACCOUNTCODEFULL + ' ' + array.ACCOUNTNAME + '" class="checkboxAccount"/> <i class="icon"></i></label>' : "";
         switch (array.LEVEL) {
             case '1':
@@ -1471,6 +1499,53 @@ function generateTableListAccountCheckbox(dataAllAccountJournal, tableAccountNam
             "<td ><span class='" + textClass + "'>" + additionalText + array.ACCOUNTNAME + "</span></td>" +
             "<td class='text-center' width='40'>" + checkboxAccount + "</td>" +
             "</tr>";
-        $("#" + tableAccountName + " > tbody").html(rowsAccount);
     });
+    
+    $("#" + tableAccountName + " > tbody").html(rowsAccount);
+}
+
+function getElementPropertyDataInContainer(arrElemDisabled) {
+	let elementPropertyData	=	[];
+
+	$.each(arrElemDisabled, function (index, elementIdClass) {
+		if (elementIdClass[0] !== '#' && elementIdClass[0] !== '.') {
+			$('#' + elementIdClass).find(':input[id]').map(function () {
+				elementPropertyData.push({
+					idClass: '#' + this.id,
+					disabled: $(this).prop('disabled') || false,
+					value: $(this).val()
+				});
+			}).get();
+		} else {
+			elementPropertyData.push({
+				idClass: elementIdClass,
+				disabled: $(elementIdClass).prop('disabled') || false,
+				value: $(elementIdClass).val()
+			});
+		}
+	});
+
+	return elementPropertyData;
+}
+
+function setDisabledPropertyElement(arrElemDisabled) {
+	$.each(arrElemDisabled, function (index, elementIdClass) {
+		if (elementIdClass[0] !== '#' && elementIdClass[0] !== '.') {
+			if ($('#' + elementIdClass).length) {
+				$('#' + elementIdClass).find(':input').prop('disabled', true);
+			}
+		} else {
+			$(elementIdClass).prop('disabled', true);
+		}
+	});
+}
+
+function resetDisabledPropertyElem(elemFilterPropertyData) {
+	elemFilterPropertyData.forEach(function (item) {
+		const $element = $(item.idClass);
+
+        if ($element.length) {
+			$element.prop('disabled', item.disabled);
+		}
+	});
 }

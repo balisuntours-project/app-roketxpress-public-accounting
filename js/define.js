@@ -51,3 +51,40 @@ var getUrlParameter = function getUrlParameter(sParam) {
     }
     return false;
 };
+
+function getAllFunctionName() {
+    var allFunctionName = [];
+    for (var i in window) {
+        if ((typeof window[i]).toString() == "function") {
+            allFunctionName.push(window[i].name);
+        }
+    }
+
+    return allFunctionName;
+}
+	
+function clearAppData(showWarning = true){
+    var localStorageKeys	=	Object.keys(localStorage),
+        localStorageIdx		=	localStorageKeys.length,
+        allFunctionName		=	getAllFunctionName();
+    for(var i=0; i<localStorageIdx; i++){
+        var keyName			=	localStorageKeys[i];
+        if(keyName.substring(0, 5) == "form_"){
+            localStorage.removeItem(keyName);
+        }
+    }
+
+    for(var i=0; i<allFunctionName.length; i++){
+        var functionName	=	allFunctionName[i];
+        if(functionName.slice(-4) === "Func"){
+            window[functionName]	=	null;
+        }
+    }
+
+    if(showWarning){
+        $("#modalWarning").on("show.bs.modal", function () {
+            $("#modalWarningBody").html("App data has been cleared");
+        });
+        $("#modalWarning").modal("show");
+    }
+}

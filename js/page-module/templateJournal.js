@@ -331,7 +331,6 @@ $("#form-editorTemplateJournal").on("submit", function (e) {
 });
 
 function confirmDeleteTemplateJournal(idJournalTemplateRecap, templateName, description) {
-
     var confirmText = 'This template journal will be deleted from the system. Details ;<br/><br/>' +
         '<div class="order-details-customer-info">' +
         '<ul>' +
@@ -344,7 +343,6 @@ function confirmDeleteTemplateJournal(idJournalTemplateRecap, templateName, desc
     $confirmDialog.find('#modal-confirm-body').html(confirmText);
     $confirmDialog.find('#confirmBtn').attr('data-idJournalTemplateRecap', idJournalTemplateRecap).attr('data-function', "deleteTemplateJournal");
     $confirmDialog.modal('show');
-
 }
 
 $('#confirmBtn').off('click');

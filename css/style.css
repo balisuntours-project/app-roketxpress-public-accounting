@@ -27645,3 +27645,14 @@ table.table > tbody > tr > td {
 .border-bottom-2px{
     border-bottom:2px solid #dee2e6!important
 }
+.border-all{
+    border:1px solid #dee2e6!important
+}
+.td-hover:hover {
+    background-color: #f2f2f2;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+span.nav-link {
+    cursor: pointer;
+}

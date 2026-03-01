@@ -168,18 +168,23 @@ function callMainPage() {
 }
 
 function setUserToken(jqXHR, showWarningModal = true, defaultToken) {
-    var token, responseMessage, urlLogout;
+    var appCacheVersion, token, responseMessage, urlLogout;
+    var responseJSON = jqXHR.responseJSON;
 
     try {
-        var responseJSON = jqXHR.responseJSON,
-            token = responseJSON.token;
+        appCacheVersion = responseJSON.appCacheVersion;
+    } catch (err) {
+        appCacheVersion = jqXHR.appCacheVersion;
+    }
+
+    try {
+        token = responseJSON.token;
     } catch (err) {
         token = jqXHR.token;
     }
 
     try {
-        var responseJSON = jqXHR.responseJSON,
-            responseMessage = Object.values(responseJSON.messages)[0];
+        responseMessage = Object.values(responseJSON.messages)[0];
     } catch (err) {
         responseMessage =
             jqXHR.messages != "" &&
@@ -187,6 +192,12 @@ function setUserToken(jqXHR, showWarningModal = true, defaultToken) {
                 jqXHR.messages !== undefined
                 ? Object.values(jqXHR.messages)[0]
                 : "";
+    }
+
+    if (appCacheVersion != "" && appCacheVersion !== null && appCacheVersion !== undefined) {
+        let currentAppCacheVersion  =   localStorage.getItem("appCacheVersion");
+        if (currentAppCacheVersion == null || currentAppCacheVersion == "" || currentAppCacheVersion !== appCacheVersion) clearAppData();
+        localStorage.setItem("appCacheVersion", appCacheVersion);
     }
 
     if ((jqXHR.status == 401 || jqXHR.status == 403) && showWarningModal) {
@@ -217,13 +228,7 @@ function setUserToken(jqXHR, showWarningModal = true, defaultToken) {
         localStorage.setItem("userToken", defaultToken);
     }
 
-    if (
-        responseMessage != "" &&
-        responseMessage !== null &&
-        responseMessage !== undefined
-    )
-        localStorage.setItem("lastMessage", responseMessage);
-
+    if (responseMessage != "" && responseMessage !== null && responseMessage !== undefined) localStorage.setItem("lastMessage", responseMessage);
     return true;
 }
 
